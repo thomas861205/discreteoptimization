@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from collections import namedtuple
-import time
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 items = []
+
+def Branch_and_Bound():
+    pass
 
 def DP(K, j, taken):
     '''
@@ -42,7 +44,26 @@ def DP(K, j, taken):
             taken[j] = 1
             return (item.value, taken)
     
+def Greedy(capacity, taken, mode=0):
+    '''
+    mode 0: take until it is full
+    mode 1: sorted by the value-weight ratio first
+    '''
+    
+    value = 0
+    weight = 0
+    if mode == 1:
+        items.sort(reverse=True, key=lambda item: item.value/item.weight) # in-place, descending order
+        # for item in items:
+        #     print(item.value/item.weight)
 
+    for item in items:
+        if weight + item.weight <= capacity:
+            taken[item.index] = 1
+            value += item.value
+            weight += item.weight
+
+    return (value, taken)
 
 def solve_it(input_data):
     # Modify this code to run your optimization algorithm
@@ -54,29 +75,20 @@ def solve_it(input_data):
     item_count = int(firstLine[0])
     capacity = int(firstLine[1])
 
-    
+    items.clear()
+
     for i in range(1, item_count+1):
         line = lines[i]
         parts = line.split()
         items.append(Item(i-1, int(parts[0]), int(parts[1])))
 
-    value = 0
-    weight = 0
     taken = [0]*len(items)
-    opt = 1
+    opt = 0
 
-    
-    # a trivial greedy algorithm for filling the knapsack
-    # it takes items in-order until the knapsack is full
-    '''
-    for item in items:
-        if weight + item.weight <= capacity:
-            taken[item.index] = 1
-            value += item.value
-            weight += item.weight
-    '''
-
-    value, taken = DP(capacity, item_count-1, taken)
+    if item_count <= 40:
+        value, taken = DP(capacity, item_count-1, taken)
+    else:
+        value, taken = Greedy(capacity, taken, mode=1)
     
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(opt) + '\n'
@@ -90,10 +102,11 @@ if __name__ == '__main__':
         file_location = sys.argv[1].strip()
         with open(file_location, 'r') as input_data_file:
             input_data = input_data_file.read()
-        # t0 = time.time()
+        import time
+        t0 = time.time()
         print(solve_it(input_data))
-        # t1  = time.time()
-        # print('Time elapsed: {:.3f}s'.format(t1-t0))
+        t1  = time.time()
+        print('Time elapsed: {:.3f}s'.format(t1-t0))
     else:
         print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/ks_4_0)')
 
