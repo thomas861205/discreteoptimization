@@ -29,13 +29,17 @@ def Branch_and_Bound(K, n, j, tmp, w, best_value, best_taken, est):
         return (best_value, best_taken)
 
     for val in (1, 0):
-        tmp[j] = val
+        tmp.append(val)
+        # print(tmp)
         w_ = w + val * items[j].weight
         if w_ <= K:
-            est_ = est - (1 - val) * items[j].value
+            # est_ = est - (1 - val) * items[j].value
+            est_, est_taken_ = Linear_Relaxation(K, n, tmp[:])
+            print(j, val, est_, est_taken_)
             if est_ >= best_value:
                 best_value, best_taken = Branch_and_Bound(
                     K, n, j+1, tmp, w_, best_value, best_taken, est_)
+        tmp.pop()
 
     return best_value, best_taken
 
@@ -75,13 +79,16 @@ def DP(K, j, taken):
             taken[j] = 1
             return (item.value, taken)
 
-def Linear_Relaxation(capacity, items, tmp=None):
+def Linear_Relaxation(capacity, item_count, domain=[]):
+    domain += [1] * (item_count - len(domain))
     weight = 0
     value = 0
     taken = [0]*len(items)
-    items_ = sorted(items, reverse=True, key=lambda item: item.value/item.weight)
+    items_ = sorted(zip(items, domain), reverse=True, key=lambda x: x[0].value/x[0].weight)
+    # print(items_)
 
-    for item in items_:
+    gen = (x[0] for x in items_ if x[1] == 1)
+    for item in gen:
         if weight + item.weight <= capacity:
             taken[item.index] = 1
             value += item.value
@@ -90,6 +97,8 @@ def Linear_Relaxation(capacity, items, tmp=None):
             taken[item.index] = (capacity - weight) / item.weight
             value += taken[item.index] * item.value
             return (value, taken)
+
+    return (value, taken)
 
 def Greedy(capacity, taken, mode=0):
     '''
@@ -100,12 +109,12 @@ def Greedy(capacity, taken, mode=0):
     value = 0
     weight = 0
     if mode == 1:
-        items.sort(reverse=True, key=lambda item: item.value/item.weight) # in-place, descending order
+        items_ = sorted(items, reverse=True, key=lambda item: item.value/item.weight) # not in-place, descending order
         # for item in items:
         #     print(item.value/item.weight)
 
     # mode 0
-    for item in items:
+    for item in items_:
         if weight + item.weight <= capacity:
             taken[item.index] = 1
             value += item.value
@@ -134,15 +143,15 @@ def solve_it(input_data):
     opt = 0
 
     if item_count <= 45:
-        tmp = [0]*len(items)
+        tmp = []
         best_taken = [0]*len(items)
         est = 0
 
-        for _, item in enumerate(items):
-            est += item.value
+        # for _, item in enumerate(items):
+        #     est += item.value
 
-        est, est_taken = Linear_Relaxation(capacity, items, tmp=None) # Linear relaxation as estimation
-        print(est, est_taken)
+        est, est_taken = Linear_Relaxation(capacity, item_count) # Linear relaxation as estimation
+        # print(est, est_taken)
         value, taken = Branch_and_Bound(capacity, item_count, 0, tmp, 0, -1, best_taken, est)
         opt = 1
     elif item_count <= 40:
