@@ -5,8 +5,35 @@ from collections import namedtuple
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 items = []
 
-def Branch_and_Bound():
-    pass
+def Branch_and_Bound(K, n, j, tmp, w, best_value, best_taken):
+    '''
+    Basically DFS + pruning
+    K: capacity
+    n: item_count
+    j: current # iterated item
+    tmp: template of taken
+    w: current weight
+    best_value:
+    '''
+    if j == n:
+        value = 0
+        for idx, item in enumerate(items):
+            value += item.value * tmp[idx]
+        # print(tmp, value, w)
+        if value > best_value:
+            best_value = value
+            best_taken = tmp[:]
+        return (best_value, best_taken)
+
+    for val in (0, 1):
+        tmp[j] = val
+        w_ = w + val * items[j].weight
+        if w_ > K:
+            continue
+        else:
+            best_value, best_taken = Branch_and_Bound(K, n, j+1, tmp, w_, best_value, best_taken)
+
+    return best_value, best_taken
 
 def DP(K, j, taken):
     '''
@@ -75,7 +102,7 @@ def solve_it(input_data):
     item_count = int(firstLine[0])
     capacity = int(firstLine[1])
 
-    items.clear()
+    items.clear() # Remember to clean the global variable
 
     for i in range(1, item_count+1):
         line = lines[i]
@@ -85,10 +112,17 @@ def solve_it(input_data):
     taken = [0]*len(items)
     opt = 0
 
-    if item_count <= 40:
+    if item_count <= 45:
+        tmp = [0]*len(items)
+        best_taken = [0]*len(items)
+        value, taken = Branch_and_Bound(capacity, item_count, 0, tmp, 0, -1, best_taken)
+        opt = 1
+    elif item_count <= 40:
         value, taken = DP(capacity, item_count-1, taken)
+        opt = 1
     else:
         value, taken = Greedy(capacity, taken, mode=1)
+        opt = 0
     
     # prepare the solution in the specified output format
     output_data = str(value) + ' ' + str(opt) + '\n'
