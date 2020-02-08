@@ -17,6 +17,7 @@ def Branch_and_Bound(K, n, j, tmp, w, best_value, best_taken, est):
     best_taken: the combination that leads to the best value
     est: optimistic estimation
     '''
+
     if j == n:
         value = 0
         for idx, item in enumerate(items):
@@ -73,11 +74,27 @@ def DP(K, j, taken):
         else:
             taken[j] = 1
             return (item.value, taken)
-    
+
+def Linear_Relaxation(capacity, items, tmp=None):
+    weight = 0
+    value = 0
+    taken = [0]*len(items)
+    items_ = sorted(items, reverse=True, key=lambda item: item.value/item.weight)
+
+    for item in items_:
+        if weight + item.weight <= capacity:
+            taken[item.index] = 1
+            value += item.value
+            weight += item.weight
+        else:
+            taken[item.index] = (capacity - weight) / item.weight
+            value += taken[item.index] * item.value
+            return (value, taken)
+
 def Greedy(capacity, taken, mode=0):
     '''
     mode 0: take until it is full
-    mode 1: sorted by the value-weight ratio first
+    mode 1: sorted by the value-weight ratio first and do mode 1
     '''
     
     value = 0
@@ -87,6 +104,7 @@ def Greedy(capacity, taken, mode=0):
         # for item in items:
         #     print(item.value/item.weight)
 
+    # mode 0
     for item in items:
         if weight + item.weight <= capacity:
             taken[item.index] = 1
@@ -115,12 +133,16 @@ def solve_it(input_data):
     taken = [0]*len(items)
     opt = 0
 
-    if item_count <= 50:
+    if item_count <= 45:
         tmp = [0]*len(items)
         best_taken = [0]*len(items)
         est = 0
+
         for _, item in enumerate(items):
             est += item.value
+
+        est, est_taken = Linear_Relaxation(capacity, items, tmp=None) # Linear relaxation as estimation
+        print(est, est_taken)
         value, taken = Branch_and_Bound(capacity, item_count, 0, tmp, 0, -1, best_taken, est)
         opt = 1
     elif item_count <= 40:
