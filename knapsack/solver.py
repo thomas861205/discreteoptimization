@@ -5,7 +5,7 @@ from collections import namedtuple
 Item = namedtuple("Item", ['index', 'value', 'weight'])
 items = []
 
-def Branch_and_Bound(K, n, j, tmp, w, best_value, best_taken):
+def Branch_and_Bound(K, n, j, tmp, w, best_value, best_taken, est):
     '''
     Basically DFS + pruning
     K: capacity
@@ -13,25 +13,28 @@ def Branch_and_Bound(K, n, j, tmp, w, best_value, best_taken):
     j: current # iterated item
     tmp: template of taken
     w: current weight
-    best_value:
+    best_value: best value
+    best_taken: the combination that leads to the best value
+    est: optimistic estimation
     '''
     if j == n:
         value = 0
         for idx, item in enumerate(items):
             value += item.value * tmp[idx]
-        # print(tmp, value, w)
+        # print(tmp, value, w, est)
         if value > best_value:
             best_value = value
             best_taken = tmp[:]
         return (best_value, best_taken)
 
-    for val in (0, 1):
+    for val in (1, 0):
         tmp[j] = val
         w_ = w + val * items[j].weight
-        if w_ > K:
-            continue
-        else:
-            best_value, best_taken = Branch_and_Bound(K, n, j+1, tmp, w_, best_value, best_taken)
+        if w_ <= K:
+            est_ = est - (1 - val) * items[j].value
+            if est_ >= best_value:
+                best_value, best_taken = Branch_and_Bound(
+                    K, n, j+1, tmp, w_, best_value, best_taken, est_)
 
     return best_value, best_taken
 
@@ -112,10 +115,13 @@ def solve_it(input_data):
     taken = [0]*len(items)
     opt = 0
 
-    if item_count <= 45:
+    if item_count <= 50:
         tmp = [0]*len(items)
         best_taken = [0]*len(items)
-        value, taken = Branch_and_Bound(capacity, item_count, 0, tmp, 0, -1, best_taken)
+        est = 0
+        for _, item in enumerate(items):
+            est += item.value
+        value, taken = Branch_and_Bound(capacity, item_count, 0, tmp, 0, -1, best_taken, est)
         opt = 1
     elif item_count <= 40:
         value, taken = DP(capacity, item_count-1, taken)
